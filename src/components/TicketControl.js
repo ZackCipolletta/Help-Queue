@@ -3,10 +3,6 @@ import NewTicketForm from "./NewTicketForm";
 import TicketDetail from "./TicketDetail";
 import TicketList from "./TicketList";
 import EditTicketForm from "./EditTicketForm";
-import { connect } from "react-redux";
-import Ticket from "./Ticket";
-import PropTypes from "prop-types";
-
 
 function TicketControl() {
 
