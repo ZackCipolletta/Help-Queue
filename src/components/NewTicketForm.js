@@ -1,7 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReusableForm from "./ReusableForm";
-import { v4 } from 'uuid';
 
 function NewTicketForm(props) {
   
@@ -11,7 +10,6 @@ function NewTicketForm(props) {
       names: event.target.names.value,
       location: event.target.location.value,
       issue: event.target.issue.value,
-      id: v4()
     });
   }
 
