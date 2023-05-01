@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import NewTicketForm from "./NewTicketForm";
 import TicketDetail from "./TicketDetail";
 import TicketList from "./TicketList";
 import EditTicketForm from "./EditTicketForm";
 import db from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, onSnapshot, deleteDoc } from "firebase/firestore";
 
 function TicketControl() {
 
@@ -12,6 +12,35 @@ function TicketControl() {
   const [mainTicketList, setMainTicketList] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [editing, setEditing] = useState(false);
+
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const unSubscribe = onSnapshot( // the side effect that we run is creating the onSnapshot() listener that listens to changes in our db.
+      // The onSnapshot() function takes three arguments:
+      // 1. A document or collection reference that we want our listener to listen to.
+      // 2. A callback function to handle a successful request. This function will be called the first time that we set up our listener, and anytime there's a change to the tickets collection.
+      // 3. A callback function to handle errors that happen when making a database request.
+      collection(db, "tickets"), // First note that we can set up a database listener to listen for changes on a document, a set of documents, or an entire collection. In our case, we're listening for changes to the tickets collection.
+      (collectionSnapshot) => {
+        const tickets = [];
+        collectionSnapshot.forEach((doc) => {
+          tickets.push({
+            names: doc.data().names,
+            location: doc.data().location,
+            issue: doc.data().issue,
+            id: doc.id
+          });
+        });
+        setMainTicketList(tickets);
+      },
+      (error) => {
+        setError(error.message);
+      }
+    );
+    return () => unSubscribe(); // we return a cleanup function for the useEffect() hook to run. useEffect() will call this function when the TicketControl component unmounts and it will unsubscribe (or stop) our db listener.
+    // The onSnapshot() function returns a function that we can call at any point to stop the listener. We save this returned function in a variable called unSubscribe. We could call this variable anything, like stop or clearListener.
+  }, []); // We pass in an empty array as the second arg, which means our effect will only run once after the components first render. We do this because we only want to create the Firestore database listener once.
 
   const handleClick = () => {
     if (selectedTicket != null) {
@@ -27,17 +56,14 @@ function TicketControl() {
     setEditing(true);
   };
 
-  const handleDeletingTicket = (id) => {
-    const newMainTicketList = mainTicketList.filter(ticket => ticket.id !== id);
-    setMainTicketList(newMainTicketList);
+  const handleDeletingTicket = async (id) => {
+    await deleteDoc(doc(db, "tickets", id));
     setSelectedTicket(null);
   };
 
-  const handleEditingTicketInList = (ticketToEdit) => {
-    const editedMainTicketList = mainTicketList
-      .filter(ticket => ticket.id !== selectedTicket.id)
-      .concat(ticketToEdit);
-    setMainTicketList(editedMainTicketList);
+  const handleEditingTicketInList = async (ticketToEdit) => {
+    const ticketRef = doc(db, "tickets", ticketToEdit.id);
+    await updateDoc(ticketRef, ticketToEdit);
     setEditing(false);
     setSelectedTicket(null);
   };
@@ -57,7 +83,10 @@ function TicketControl() {
   let currentlyVisibleState = null;
   let buttonText = null;
 
-  if (editing) {
+  if (error) {
+    currentlyVisibleState = <p>There was an error: {error}</p>;
+  }
+  else if (editing) {
     currentlyVisibleState =
       <EditTicketForm
         ticket={selectedTicket}
@@ -87,7 +116,7 @@ function TicketControl() {
   return (
     <React.Fragment>
       {currentlyVisibleState}
-      <button onClick={handleClick}>{buttonText}</button>
+      {error ? null : <button onClick={handleClick}>{buttonText}</button>}
     </React.Fragment>
   );
 }
