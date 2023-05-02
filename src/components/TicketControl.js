@@ -3,8 +3,9 @@ import NewTicketForm from "./NewTicketForm";
 import TicketDetail from "./TicketDetail";
 import TicketList from "./TicketList";
 import EditTicketForm from "./EditTicketForm";
-import db from "../firebase";
+import { db, auth } from "../firebase"; // Now, we're exporting an object with two variables inside of it. With this change, the db variable is no longer a default export. Instead, both db and auth are now called named exports. This means that when we import these variables in other files, the names of the imports need to exactly match the names of the exported variables. So, our very next step needs to be updating the import statement for db in TicketControl.js to destructure the db variable from the object we exported from firebase.js:
 import { collection, addDoc, doc, updateDoc, onSnapshot, deleteDoc } from "firebase/firestore";
+
 
 function TicketControl() {
 
@@ -83,42 +84,51 @@ function TicketControl() {
   let currentlyVisibleState = null;
   let buttonText = null;
 
-  if (error) {
-    currentlyVisibleState = <p>There was an error: {error}</p>;
+  if (auth.currentUser == null) {
+    return (
+      <React.Fragment>
+        <h1>You must be signed in to access the queue.</h1>
+      </React.Fragment>
+    );
+  } else if (auth.currentUser != null) {
+  
+    if (error) {
+      currentlyVisibleState = <p>There was an error: {error}</p>;
+    }
+    else if (editing) {
+      currentlyVisibleState =
+        <EditTicketForm
+          ticket={selectedTicket}
+          onEditTicket={handleEditingTicketInList} />;
+      buttonText = "Return to Ticket List";
+    }
+    else if (selectedTicket != null) {
+      currentlyVisibleState =
+        <TicketDetail
+          ticket={selectedTicket}
+          onClickingDelete={handleDeletingTicket}
+          onClickingEdit={handleEditClick} />;
+      buttonText = "Return to Ticket List";
+    }
+    else if (formVisibleOnPage) {
+      currentlyVisibleState =
+        <NewTicketForm
+          onNewTicketCreation={handleAddingNewTicketToList} />;
+      buttonText = "Return to Ticket List";
+    } else {
+      currentlyVisibleState =
+        <TicketList
+          onTicketSelection={handleChangingSelectedTicket}
+          ticketList={mainTicketList} />;
+      buttonText = "Add Ticket";
+    }
+    return (
+      <React.Fragment>
+        {currentlyVisibleState}
+        {error ? null : <button onClick={handleClick}>{buttonText}</button>}
+      </React.Fragment>
+    );
   }
-  else if (editing) {
-    currentlyVisibleState =
-      <EditTicketForm
-        ticket={selectedTicket}
-        onEditTicket={handleEditingTicketInList} />;
-    buttonText = "Return to Ticket List";
-  }
-  else if (selectedTicket != null) {
-    currentlyVisibleState =
-      <TicketDetail
-        ticket={selectedTicket}
-        onClickingDelete={handleDeletingTicket}
-        onClickingEdit={handleEditClick} />;
-    buttonText = "Return to Ticket List";
-  }
-  else if (formVisibleOnPage) {
-    currentlyVisibleState =
-      <NewTicketForm
-        onNewTicketCreation={handleAddingNewTicketToList} />;
-    buttonText = "Return to Ticket List";
-  } else {
-    currentlyVisibleState =
-      <TicketList
-        onTicketSelection={handleChangingSelectedTicket}
-        ticketList={mainTicketList} />;
-    buttonText = "Add Ticket";
-  }
-  return (
-    <React.Fragment>
-      {currentlyVisibleState}
-      {error ? null : <button onClick={handleClick}>{buttonText}</button>}
-    </React.Fragment>
-  );
 }
 
 export default TicketControl;
