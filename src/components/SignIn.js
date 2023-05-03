@@ -83,4 +83,6 @@ function SignIn() {
   );
 }
 
+//Take note that when auth.currentUser is set to a signed in user, that user is a User object that extends functionality from the UserInfo class. These classes contain properties that store the user's personal information, like their email, display name, phone number, and photo URL. That's the making of a user profile right there! Currently, we only gather an email and password, so if you want to add functionality for a user profile, you'll have to explore that in a project you create for this course section, or on your own.
+
 export default SignIn;
